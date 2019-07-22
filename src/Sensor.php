@@ -3,13 +3,11 @@
 namespace Deleu\Sensor;
 
 use Aws\XRay\XRayClient;
-use Bref\Context\Context;
+use Deleu\Sensor\Trace\Identifier;
 use Psr\Log\LoggerInterface;
 
 final class Sensor
 {
-    private static $context;
-
     private static $segments = [];
 
     private $logger;
@@ -25,56 +23,15 @@ final class Sensor
         $this->logger = $logger;
     }
 
-    public static function context(Context $context): void
-    {
-        // @TODO: Replace Context with an owned value object to decouple from Bref and Lambda.
-        self::$context = $context;
-    }
-
-    private static function trace()
-    {
-        // @TODO: Study what can be done with the `Sampled` variable.
-        $value = self::$context->getTraceId();
-
-        return explode('=', explode(';', $value)[0])[1];
-    }
-
     // @TODO: extract before and after to another class and let Sensor be the entrypoint for the library?
 
     public function before(string $method): callable
     {
         return function () use ($method) {
-            if (! self::$context) {
-                $this->logger->warning('Context not available');
-
-                return;
-            }
-
             if (empty(self::$segments)) {
-                $prefix = '000000000a';
-
-                $random = str_pad(random_int(1, 999) * 1000, 6, 0, STR_PAD_LEFT);
-
-                $id = $prefix . $random;
-
-                self::$segments[] = new Segment(
-                    $id,
-                    self::trace(),
-                    $method,
-                    microtime(true),
-                );
+                $this->makeSegment($method);
             } else {
-                $parent = self::$segments[count(self::$segments) - 1];
-
-                $id = $parent->id();
-
-                self::$segments[] = new Segment(
-                    ++$id,
-                    self::trace(),
-                    $method,
-                    microtime(true),
-                    $parent
-                );
+                $this->makeChildSegment($method);
             }
         };
     }
@@ -95,5 +52,36 @@ final class Sensor
                 }
             }
         };
+    }
+
+    private function makeSegment(string $method)
+    {
+        $prefix = '000000000a';
+
+        $random = str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
+
+        $id = $prefix . $random;
+
+        self::$segments[] = new Segment(
+            $id,
+            Identifier::trace(),
+            $method,
+            microtime(true)
+        );
+    }
+
+    private function makeChildSegment(string $method)
+    {
+        $parent = self::$segments[count(self::$segments) - 1];
+
+        $id = $parent->id();
+
+        self::$segments[] = new Segment(
+            ++$id,
+            Identifier::trace(),
+            $method,
+            microtime(true),
+            $parent
+        );
     }
 }
