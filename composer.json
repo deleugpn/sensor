@@ -1,0 +1,40 @@
+{
+  "name": "deleu/sensor",
+  "type": "project",
+  "description": "Profiling PHP on AWS Lambda using X-Ray",
+  "keywords": [
+    "aws",
+    "lambda",
+    "x-ray",
+    "profiling"
+  ],
+  "license": "MIT",
+  "require": {
+    "php": "^7.2.2",
+    "ext-json": "*",
+    "aws/aws-sdk-php": "^3.93",
+    "mnapoli/bref": "^0.3.9",
+    "ocramius/proxy-manager": "^2.2",
+    "psr/log": "~1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^7.5"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "preferred-install": "dist",
+    "sort-packages": true
+  },
+  "autoload": {
+    "psr-4": {
+      "Deleu\\Sensor\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Deleu\\Sensor\\Tests\\": "tests/"
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
